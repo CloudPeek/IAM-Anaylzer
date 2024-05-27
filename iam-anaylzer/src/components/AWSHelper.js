@@ -117,6 +117,8 @@ export async function fetchIAMRoles() {
           created: roleDetails.Role.CreateDate,
           status: 'Best Practice', // This should be set based on your application's logic
           moreInfo: 'moreinfo',
+          inlinePoliciesCount: inlinePolicies.length,
+          attachedPoliciesCount: attachedPolicies.length,
           createdBy: createdBy,
           inlinePolicies: inlinePolicies,
           attachedPolicies: attachedPolicies
@@ -128,6 +130,8 @@ export async function fetchIAMRoles() {
           name: role.RoleName,
           created: 'Unknown',
           status: 'Error',
+          inlinePoliciesCount: 0,
+          attachedPoliciesCount: 0,
           moreInfo: 'Information not found',
           createdBy: 'Unknown',
           inlinePolicies: [],
@@ -154,4 +158,3 @@ export async function analyzePolicyOnRequest(apiKey, policyDocument) {
     return 'Analysis failed.';
   }
 }
-

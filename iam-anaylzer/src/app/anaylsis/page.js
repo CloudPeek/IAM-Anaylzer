@@ -14,6 +14,8 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+const CACHE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 export default function Analysis() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +28,25 @@ export default function Analysis() {
   useEffect(() => {
     async function fetchRolesAndArn() {
       try {
-        const roleArn = await AWSStsReturns();
-        setIamRole(roleArn);
+        const cachedRoles = localStorage.getItem('iamRoles');
+        const cachedArn = localStorage.getItem('iamRoleArn');
+        const cacheTimestamp = localStorage.getItem('cacheTimestamp');
+        const currentTime = new Date().getTime();
 
-        const fetchedRoles = await fetchIAMRoles();
-        setRoles(fetchedRoles);
+        if (cachedRoles && cachedArn && cacheTimestamp && (currentTime - cacheTimestamp < CACHE_INTERVAL)) {
+          setRoles(JSON.parse(cachedRoles));
+          setIamRole(cachedArn);
+          setLoading(false);
+        } else {
+          const roleArn = await AWSStsReturns();
+          setIamRole(roleArn);
+          localStorage.setItem('iamRoleArn', roleArn);
+
+          const fetchedRoles = await fetchIAMRoles();
+          setRoles(fetchedRoles);
+          localStorage.setItem('iamRoles', JSON.stringify(fetchedRoles));
+          localStorage.setItem('cacheTimestamp', currentTime);
+        }
       } catch (error) {
         setError('Failed to fetch IAM roles or ARN');
         setShowError(true);
@@ -39,7 +55,12 @@ export default function Analysis() {
         setLoading(false);
       }
     }
+
     fetchRolesAndArn();
+
+    const interval = setInterval(fetchRolesAndArn, CACHE_INTERVAL);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleRoleClick = (role) => {
@@ -84,7 +105,19 @@ export default function Analysis() {
                     >
                       Created On
                     </th>
-                    <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-0">
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500"
+                    >
+                      Number of Inline policies
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500"
+                    >
+                      Number of Attached policies
+                    </th>
+                    <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-0 text-gray-500">
                       <span className="sr-only">More Info</span>
                       More Info
                     </th>
@@ -108,6 +141,12 @@ export default function Analysis() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {new Date(role.created).toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {role.inlinePoliciesCount}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {role.attachedPoliciesCount}
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <a href="#" className="text-indigo-600 hover:text-indigo-900">

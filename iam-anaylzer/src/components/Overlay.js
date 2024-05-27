@@ -10,6 +10,15 @@ const Overlay = ({ open, setOpen, role }) => {
   const [loadingPolicies, setLoadingPolicies] = useState({});
 
   const handleAnalyzePolicy = async (policyName, policyDocument) => {
+    const cachedAnalysis = localStorage.getItem(`analysis_${policyName}`);
+    if (cachedAnalysis) {
+      setAnalysisResults((prevResults) => ({
+        ...prevResults,
+        [policyName]: cachedAnalysis,
+      }));
+      return;
+    }
+
     const apiKey = localStorage.getItem('openaiApiKey');
     if (!apiKey) {
       console.error('OpenAI API key is missing');
@@ -24,6 +33,7 @@ const Overlay = ({ open, setOpen, role }) => {
       [policyName]: analysis,
     }));
     setLoadingPolicies((prev) => ({ ...prev, [policyName]: false }));
+    localStorage.setItem(`analysis_${policyName}`, analysis);
   };
 
   return (
