@@ -31,6 +31,14 @@ The IAM Analysis Application is a web-based tool designed to provide comprehensi
 ### Error Handling
 - **Notifications:** The app displays error notifications if there is an issue with fetching IAM data or analyzing policies.
 
+## Instaltion 
+```
+cd iam-anaylzer
+npm install 
+npm start dev
+
+```
+
 ## Usage
 
 1. **Home Page:** Upon opening the app, users will see tabs for different IAM entities (Roles, Users, Groups, and Identity Providers).
