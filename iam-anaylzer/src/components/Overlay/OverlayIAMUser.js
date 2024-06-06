@@ -4,15 +4,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { decodeAndParseJson } from '@/utils/decodeAndParseJson';
 import { analyzePolicyOnRequest } from '@/components/AWSHelper/analyzePolicyOnRequest';
 
-const Overlay = ({ open, setOpen, entity }) => {
+const OverlayIAMUser = ({ open, setOpen, user }) => {
   const [analysisResults, setAnalysisResults] = useState({});
   const [loadingPolicies, setLoadingPolicies] = useState({});
 
   useEffect(() => {
-    if (!entity) {
-      console.error('No entity data available.');
+    if (!user) {
+      console.error('No user data available.');
     }
-  }, [entity]);
+  }, [user]);
 
   const handleAnalyzePolicy = async (policyName, policyDocument) => {
     const cachedAnalysis = localStorage.getItem(`analysis_${policyName}`);
@@ -62,7 +62,7 @@ const Overlay = ({ open, setOpen, entity }) => {
                     <div className="px-4 sm:px-6">
                       <div className="flex items-start justify-between">
                         <Dialog.Title className="text-base font-semibold leading-6 text-black">
-                          Entity Details
+                          User Details
                         </Dialog.Title>
                         <div className="ml-3 flex h-7 items-center">
                           <button
@@ -77,17 +77,19 @@ const Overlay = ({ open, setOpen, entity }) => {
                         </div>
                       </div>
                     </div>
-                    {entity ? (
+                    {user ? (
                       <div className="relative mt-6 flex-1 px-4 sm:px-6">
-                        <p className="text-sm text-black"><strong>Name:</strong> {entity.name}</p>
-                        <p className="text-sm text-black"><strong>ARN:</strong> {entity.id}</p>
-                        <p className="text-sm text-black"><strong>Created On:</strong> {new Date(entity.created).toLocaleString()}</p>
-                        <p className="text-sm text-black"><strong>Created By:</strong> {entity.createdBy}</p>
-                        <p className="text-sm text-black"><strong>Status:</strong> {entity.status}</p>
+                        <p className="text-sm text-black"><strong>Name:</strong> {user.name}</p>
+                        <p className="text-sm text-black"><strong>ARN:</strong> {user.arn}</p>
+                        <p className="text-sm text-black"><strong>Created On:</strong> {new Date(user.created).toLocaleString()}</p>
+                        <p className="text-sm text-black"><strong>Access Keys Count:</strong> {user.accessKeysCount}</p>
+                        <p className="text-sm text-black"><strong>Access Keys Created Dates:</strong> {user.accessKeysCreatedDates.map(date => new Date(date).toLocaleString()).join(', ')}</p>
+                        <p className="text-sm text-black"><strong>Groups:</strong> {user.groups.join(', ')}</p>
+                        <p className="text-sm text-black"><strong>Console Sign-In Link:</strong> <a href={user.consoleSignInLink} target="_blank" rel="noopener noreferrer">{user.consoleSignInLink}</a></p>
                         <div className="mt-4">
                           <h4 className="text-md font-semibold text-black">Inline Policies</h4>
-                          {entity.inlinePolicies && entity.inlinePolicies.length > 0 ? (
-                            entity.inlinePolicies.map((policy, index) => (
+                          {user.inlinePolicies && user.inlinePolicies.length > 0 ? (
+                            user.inlinePolicies.map((policy, index) => (
                               <div key={index} className="mt-2">
                                 <p className="text-sm text-black"><strong>Policy Name:</strong> {policy.PolicyName}</p>
                                 <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto text-black">
@@ -113,8 +115,8 @@ const Overlay = ({ open, setOpen, entity }) => {
                         </div>
                         <div className="mt-4">
                           <h4 className="text-md font-semibold text-black">Attached Policies</h4>
-                          {entity.attachedPolicies && entity.attachedPolicies.length > 0 ? (
-                            entity.attachedPolicies.map((policy, index) => (
+                          {user.attachedPolicies && user.attachedPolicies.length > 0 ? (
+                            user.attachedPolicies.map((policy, index) => (
                               <div key={index} className="mt-2">
                                 <p className="text-sm text-black"><strong>Policy Name:</strong> {policy.PolicyName}</p>
                                 <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto text-black">
@@ -140,7 +142,7 @@ const Overlay = ({ open, setOpen, entity }) => {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-black">No entity data available.</p>
+                      <p className="text-sm text-black">No user data available.</p>
                     )}
                   </div>
                 </Dialog.Panel>
@@ -153,5 +155,4 @@ const Overlay = ({ open, setOpen, entity }) => {
   );
 };
 
-export default Overlay;
-    
+export default OverlayIAMUser;

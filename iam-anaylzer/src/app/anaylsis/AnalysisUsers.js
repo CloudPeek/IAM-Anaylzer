@@ -1,31 +1,38 @@
+// src/app/anaylsis/AnalysisUsers.js
 'use client'
 import React, { useEffect, useState } from 'react';
-import { fetchIAMUsers, AWSStsReturns } from '@/components/AWSHelper';
+import { fetchIAMUsers } from '@/components/AWSHelper/fetchIAMUsers';
+import { AWSStsReturns } from '@/components/AWSHelper/AWSStsReturns';
 import ErrorNotification from '@/components/Error';
-import Overlay from '@/components/Overlay';
+import OverlayOne from '@/components/OverlayOne';
 
 const AnalysisUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [iamRole, setIamRole] = useState('');
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchUsersAndArn() {
       try {
+        const roleArn = await AWSStsReturns();
+        setIamRole(roleArn);
+
         const fetchedUsers = await fetchIAMUsers();
         setUsers(fetchedUsers);
       } catch (error) {
-        setError('Failed to fetch IAM users');
+        setError('Failed to fetch IAM users or ARN');
         setShowError(true);
-        console.error('Failed to fetch IAM users:', error);
+        console.error('Failed to fetch IAM users or ARN:', error);
       } finally {
         setLoading(false);
       }
     }
-    fetchUsers();
+
+    fetchUsersAndArn();
   }, []);
 
   const handleUserClick = (user) => {
@@ -38,7 +45,7 @@ const AnalysisUsers = () => {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-base font-semibold leading-6 text-gray-900">IAM Users</h1>
-          <p className="mt-2 text-sm text-gray-700">Analysis of IAM users.</p>
+          <p className="mt-2 text-sm text-gray-700">Analysis of IAM users which are accessible to {iamRole}.</p>
         </div>
       </div>
       <div className="mt-8 flow-root">
@@ -56,6 +63,9 @@ const AnalysisUsers = () => {
                     <th scope="col" className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                       Created On
                     </th>
+                    <th scope="col" className="py-3 pl-4 pr-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 sm:pl-0">
+                      Access Keys
+                    </th>
                     <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-0 text-gray-500">
                       <span className="sr-only">More Info</span>
                       More Info
@@ -71,6 +81,9 @@ const AnalysisUsers = () => {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {new Date(user.created).toLocaleString()}
                       </td>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                        {user.accessKeysCount}
+                      </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <a href="#" className="text-indigo-600 hover:text-indigo-900">
                           More Info<span className="sr-only">, {user.name}</span>
@@ -84,7 +97,7 @@ const AnalysisUsers = () => {
           </div>
         )}
       </div>
-      {selectedUser && <Overlay open={showOverlay} setOpen={setShowOverlay} entity={selectedUser} />}
+      {selectedUser && <OverlayOne open={showOverlay} setOpen={setShowOverlay} entity={selectedUser} />}
       <ErrorNotification message={error} show={showError} setShow={setShowError} />
     </div>
   );

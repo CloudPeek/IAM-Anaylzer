@@ -1,31 +1,37 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import { fetchIAMGroups, AWSStsReturns } from '@/components/AWSHelper';
+import { fetchIAMGroups } from '@/components/AWSHelper/fetchIAMGroups';
+import { AWSStsReturns } from '@/components/AWSHelper/AWSStsReturns';
 import ErrorNotification from '@/components/Error';
 import Overlay from '@/components/Overlay';
 
 const AnalysisGroups = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [iamRole, setIamRole] = useState('');
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
 
   useEffect(() => {
-    async function fetchGroups() {
+    async function fetchGroupsAndArn() {
       try {
+        const roleArn = await AWSStsReturns();
+        setIamRole(roleArn);
+
         const fetchedGroups = await fetchIAMGroups();
         setGroups(fetchedGroups);
       } catch (error) {
-        setError('Failed to fetch IAM groups');
+        setError('Failed to fetch IAM groups or ARN');
         setShowError(true);
-        console.error('Failed to fetch IAM groups:', error);
+        console.error('Failed to fetch IAM groups or ARN:', error);
       } finally {
-        setLoading(false);
+        setLoading(false);  
       }
     }
-    fetchGroups();
+
+    fetchGroupsAndArn();
   }, []);
 
   const handleGroupClick = (group) => {
@@ -38,7 +44,7 @@ const AnalysisGroups = () => {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-base font-semibold leading-6 text-gray-900">IAM Groups</h1>
-          <p className="mt-2 text-sm text-gray-700">Analysis of IAM groups.</p>
+          <p className="mt-2 text-sm text-gray-700">Analysis of IAM groups which are accessible to {iamRole}.</p>
         </div>
       </div>
       <div className="mt-8 flow-root">
@@ -56,6 +62,7 @@ const AnalysisGroups = () => {
                     <th scope="col" className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                       Created On
                     </th>
+                    
                     <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-0 text-gray-500">
                       <span className="sr-only">More Info</span>
                       More Info

@@ -1,6 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import { fetchIAMIdentityProviders, AWSStsReturns } from '@/components/AWSHelper';
+//mport { fetchIAMIdentityProviders, AWSStsReturns } from '@/components/AWSHelper';
+import { fetchIAMIdentityProviders } from '@/components/AWSHelper/fetchIAMIdentityProviders';
+import { AWSStsReturns } from '@/components/AWSHelper/AWSStsReturns';
 import ErrorNotification from '@/components/Error';
 import Overlay from '@/components/Overlay';
 
