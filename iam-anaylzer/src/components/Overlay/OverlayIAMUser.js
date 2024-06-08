@@ -32,13 +32,18 @@ const OverlayIAMUser = ({ open, setOpen, user }) => {
 
     setLoadingPolicies((prev) => ({ ...prev, [policyName]: true }));
 
-    const analysis = await analyzePolicyOnRequest(apiKey, policyDocument);
-    setAnalysisResults((prevResults) => ({
-      ...prevResults,
-      [policyName]: analysis,
-    }));
-    setLoadingPolicies((prev) => ({ ...prev, [policyName]: false }));
-    localStorage.setItem(`analysis_${policyName}`, analysis);
+    try {
+      const analysis = await analyzePolicyOnRequest(apiKey, policyDocument);
+      setAnalysisResults((prevResults) => ({
+        ...prevResults,
+        [policyName]: analysis,
+      }));
+      localStorage.setItem(`analysis_${policyName}`, analysis);
+    } catch (error) {
+      console.error(`Error analyzing policy ${policyName}:`, error);
+    } finally {
+      setLoadingPolicies((prev) => ({ ...prev, [policyName]: false }));
+    }
   };
 
   return (
@@ -85,6 +90,12 @@ const OverlayIAMUser = ({ open, setOpen, user }) => {
                         <p className="text-sm text-black"><strong>Access Keys Count:</strong> {user.accessKeysCount}</p>
                         <p className="text-sm text-black"><strong>Access Keys Created Dates:</strong> {user.accessKeysCreatedDates.map(date => new Date(date).toLocaleString()).join(', ')}</p>
                         <p className="text-sm text-black"><strong>Groups:</strong> {user.groups.join(', ')}</p>
+                        <p className="text-sm text-black"><strong>ARN Capabilities:</strong> {user.arnCapabilities}</p>
+                        <p className="text-sm text-black"><strong>Best Practice:</strong> {user.bestPractice}</p>
+                        <p className="text-sm text-black"><strong>Best Practice Description:</strong> {user.bestPracticeDescription}</p>
+                        <p className="text-sm text-black"><strong>Security Concerns:</strong> {user.securityConcerns}</p>
+                        <p className="text-sm text-black"><strong>Security Description:</strong> {user.securityDescription}</p>
+                        <p className="text-sm text-black"><strong>Recommendations:</strong> {user.recommendations}</p>
                         <p className="text-sm text-black"><strong>Console Sign-In Link:</strong> <a href={user.consoleSignInLink} target="_blank" rel="noopener noreferrer">{user.consoleSignInLink}</a></p>
                         <div className="mt-4">
                           <h4 className="text-md font-semibold text-black">Inline Policies</h4>

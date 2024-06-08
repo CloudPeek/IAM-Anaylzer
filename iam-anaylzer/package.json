@@ -18,7 +18,8 @@
     "next-themes": "^0.3.0",
     "openai": "^4.47.1",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-string-replace": "^1.1.1"
   },
   "devDependencies": {
     "eslint": "^8",

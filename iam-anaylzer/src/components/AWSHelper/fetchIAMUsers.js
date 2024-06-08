@@ -9,6 +9,7 @@ import {
   GetPolicyVersionCommand,
   ListGroupsForUserCommand
 } from "@aws-sdk/client-iam";
+import { analyzeOverview } from "./analyzeOverview";
 
 export async function fetchIAMUsers() {
   try {
@@ -18,7 +19,7 @@ export async function fetchIAMUsers() {
     const region = 'eu-west-2';
 
     if (!accessKeyId || !secretAccessKey || !sessionToken) {
-      throw new Error('Missing credentials');
+      throw new Error('Missing AWS credentials');
     }
 
     const iamConfig = {
@@ -40,8 +41,13 @@ export async function fetchIAMUsers() {
 
     const users = await Promise.all(usersResponse.Users.map(async (user) => {
       try {
-        const listAccessKeysCommand = new ListAccessKeysCommand({ UserName: user.UserName });
-        const accessKeysResponse = await iamClient.send(listAccessKeysCommand);
+        const [accessKeysResponse, userPoliciesResponse, attachedUserPoliciesResponse, groupsResponse] = await Promise.all([
+          iamClient.send(new ListAccessKeysCommand({ UserName: user.UserName })),
+          iamClient.send(new ListUserPoliciesCommand({ UserName: user.UserName })),
+          iamClient.send(new ListAttachedUserPoliciesCommand({ UserName: user.UserName })),
+          iamClient.send(new ListGroupsForUserCommand({ UserName: user.UserName }))
+        ]);
+
         const accessKeys = accessKeysResponse.AccessKeyMetadata.map(key => ({
           keyId: key.AccessKeyId,
           created: key.CreateDate,
@@ -49,8 +55,6 @@ export async function fetchIAMUsers() {
         const accessKeysCount = accessKeys.length;
         const accessKeysCreatedDates = accessKeys.map(key => key.created);
 
-        const listUserPoliciesCommand = new ListUserPoliciesCommand({ UserName: user.UserName });
-        const userPoliciesResponse = await iamClient.send(listUserPoliciesCommand);
         const inlinePolicies = await Promise.all(userPoliciesResponse.PolicyNames.map(async (policyName) => {
           const getUserPolicyCommand = new GetUserPolicyCommand({ UserName: user.UserName, PolicyName: policyName });
           const userPolicyResponse = await iamClient.send(getUserPolicyCommand);
@@ -62,8 +66,6 @@ export async function fetchIAMUsers() {
           };
         }));
 
-        const listAttachedUserPoliciesCommand = new ListAttachedUserPoliciesCommand({ UserName: user.UserName });
-        const attachedUserPoliciesResponse = await iamClient.send(listAttachedUserPoliciesCommand);
         const attachedPolicies = await Promise.all(attachedUserPoliciesResponse.AttachedPolicies.map(async (policy) => {
           const getPolicyCommand = new GetPolicyCommand({ PolicyArn: policy.PolicyArn });
           const policyResponse = await iamClient.send(getPolicyCommand);
@@ -82,11 +84,40 @@ export async function fetchIAMUsers() {
           };
         }));
 
-        const listGroupsForUserCommand = new ListGroupsForUserCommand({ UserName: user.UserName });
-        const groupsResponse = await iamClient.send(listGroupsForUserCommand);
         const groups = groupsResponse.Groups.map(group => group.GroupName);
 
         const consoleSignInLink = `https://${region}.signin.aws.amazon.com/console?username=${user.UserName}`;
+        const forOverviewAnalysis = {
+          inlinePolicies,
+          attachedPolicies,
+          arn: user.Arn,
+          created: user.CreateDate,
+          accessKeysCount,
+          accessKeysCreatedDates,
+          groups
+        };
+        const inlinePoliciesCount = inlinePolicies.length;
+        const attachedPoliciesCount = attachedPolicies.length;
+        const forOverviewAnalysisString = JSON.stringify(forOverviewAnalysis);
+        const analysisData = await analyzeOverview(forOverviewAnalysisString);
+
+        // Log the entire response first
+        console.log('Received data:', analysisData);
+
+        // Ensure `analysisData` is properly parsed
+        const arnCapabilities = analysisData.ARN_capabilities || 'Not Available';
+        const bestPractice = analysisData.Best_Practice !== undefined ? (analysisData.Best_Practice ? 'Yes' : 'No') : 'Not Available';
+        const bestPracticeDescription = analysisData.BestPractice_description || 'Not Available';
+        const securityConcerns = analysisData.Security_Concerns !== undefined ? (analysisData.Security_Concerns ? 'Yes' : 'No') : 'Not Available';
+        const securityDescription = analysisData.SecurityDescription || 'Not Available';
+        const recommendations = analysisData.Recommendations || 'Not Available';
+
+        console.log('ARN Capabilities:', arnCapabilities);
+        console.log('Best Practice:', bestPractice);
+        console.log('Best Practice Description:', bestPracticeDescription);
+        console.log('Security Concerns:', securityConcerns);
+        console.log('Security Description:', securityDescription);
+        console.log('Recommendations:', recommendations);
 
         return {
           id: user.UserId,
@@ -96,9 +127,17 @@ export async function fetchIAMUsers() {
           created: user.CreateDate,
           accessKeysCount: accessKeysCount,
           accessKeysCreatedDates: accessKeysCreatedDates,
+          inlinePoliciesCount: inlinePoliciesCount,
           inlinePolicies: inlinePolicies,
+          attachedPoliciesCount: attachedPoliciesCount,
           attachedPolicies: attachedPolicies,
           groups: groups,
+          arnCapabilities: arnCapabilities,
+          bestPractice: bestPractice,
+          bestPracticeDescription: bestPracticeDescription,
+          securityConcerns: securityConcerns,
+          securityDescription: securityDescription,
+          recommendations: recommendations,
           consoleSignInLink: consoleSignInLink
         };
       } catch (userError) {
@@ -114,12 +153,17 @@ export async function fetchIAMUsers() {
           inlinePolicies: [],
           attachedPolicies: [],
           groups: [],
+          arnCapabilities: 'Not Available',
+          bestPractice: 'Not Available',
+          bestPracticeDescription: 'Not Available',
+          securityConcerns: 'Not Available',
+          securityDescription: 'Not Available',
+          recommendations: 'Not Available',
           consoleSignInLink: 'Unavailable'
         };
       }
     }));
 
-    console.log('Users fetched:', users);
     return users;
   } catch (error) {
     console.error('Error fetching IAM users:', error);

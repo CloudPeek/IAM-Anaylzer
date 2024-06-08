@@ -9,3 +9,13 @@ export async function analyzePolicyOnRequest(apiKey, policyDocument) {
     return 'Analysis failed.';
   }
 }
+
+export async function analyzeEntityOnLoad(apiKey, entityToAnaylze) {
+  try {
+    const analysis = await overviewAnalysis(apiKey, entityToAnaylze);
+    return analysis;
+  } catch (error) {
+    console.error('Error analyzing enterty:', error);
+    return 'Analysis failed.';
+  }
+}

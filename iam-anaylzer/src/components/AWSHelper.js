@@ -16,7 +16,7 @@ import {
   GetGroupPolicyCommand,
   ListAttachedGroupPoliciesCommand
 } from "@aws-sdk/client-iam";
-import { analyzePolicy } from '@/utils/openAIUtility';
+import { analyzePolicy, overviewAnylsis } from '@/utils/openAIUtility';
 
 export async function AWSStsReturns() {
   try {
